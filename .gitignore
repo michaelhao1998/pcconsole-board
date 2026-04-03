@@ -1,0 +1,14 @@
+# Excel temp files
+~$*
+*.tmp
+
+# SQL setup (already executed)
+setup.sql
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

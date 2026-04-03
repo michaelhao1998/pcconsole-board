@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC Console 项目管理看板</title>
+<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+  <!-- 侧边导航 -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">PC</div>
+      <span class="logo-text">Console Board</span>
+    </div>
+    <div class="nav-items">
+      <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>信息看板</span>
+      </button>
+      <button class="nav-btn" data-view="input" onclick="switchView('input')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span>录入进展</span>
+      </button>
+      <button class="nav-btn" data-view="agent" onclick="switchView('agent')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 3-3.87"/><circle cx="12" cy="13" r="1"/><path d="M12 14v3"/></svg>
+        <span>AI Agent</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="main-content">
+    <!-- ===== 看板视图 ===== -->
+    <section id="view-dashboard" class="view active">
+      <div class="view-header">
+        <div>
+          <h1>项目进展看板</h1>
+          <p class="subtitle">PC Console 商务及运营工作进展总览</p>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" id="search-input" class="search-input" placeholder="搜索项目、内容、人员..." oninput="renderDashboard()">
+          </div>
+          <div class="filter-group">
+            <select id="filter-project" onchange="renderDashboard()"><option value="">全部项目</option></select>
+            <select id="filter-platform" onchange="renderDashboard()"><option value="">全部平台</option></select>
+            <select id="filter-person" onchange="renderDashboard()"><option value="">全部填写人</option></select>
+          </div>
+          <button class="btn-primary" onclick="switchView('input')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            录入新进展
+          </button>
+        </div>
+      </div>
+      <div class="stats-bar" id="stats-bar"></div>
+      <div class="dashboard-grid" id="dashboard-grid"></div>
+      <!-- 空状态 -->
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-icon">📋</div>
+        <h3>暂无进展记录</h3>
+        <p>点击「录入新进展」开始添加工作进展</p>
+        <button class="btn-primary" onclick="switchView('input')">立即录入</button>
+      </div>
+    </section>
+
+    <!-- ===== 录入视图 ===== -->
+    <section id="view-input" class="view">
+      <div class="view-header">
+        <div>
+          <h1 id="input-title">录入工作进展</h1>
+          <p class="subtitle" id="input-subtitle">支持一次性录入多条进展</p>
+        </div>
+        <button class="btn-outline" onclick="switchView('dashboard')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          返回看板
+        </button>
+      </div>
+      <div id="input-forms"></div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="addFormEntry()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          添加一条
+        </button>
+        <button class="btn-primary btn-lg" onclick="submitAll()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+          提交全部
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== AI Agent 视图 ===== -->
+    <section id="view-agent" class="view">
+      <div class="view-header">
+        <div>
+          <h1>🤖 AI Agent · 运营管理中心</h1>
+          <p class="subtitle">产品经理 + 项目管理运营官 — 智能看板管理助手</p>
+        </div>
+        <button class="btn-outline" onclick="switchView('dashboard')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          返回看板
+        </button>
+      </div>
+
+      <!-- Agent 功能卡片网格 -->
+      <div class="agent-modules">
+        <!-- 数据总览 -->
+        <div class="agent-card agent-card-wide">
+          <div class="agent-card-header">
+            <div class="agent-card-icon blue">📊</div>
+            <h3>数据健康度总览</h3>
+            <span class="agent-badge">实时</span>
+          </div>
+          <div id="agent-health" class="agent-health-grid"></div>
+        </div>
+
+        <!-- 录入质量巡检 -->
+        <div class="agent-card">
+          <div class="agent-card-header">
+            <div class="agent-card-icon orange">🔍</div>
+            <h3>录入质量巡检</h3>
+          </div>
+          <div id="agent-quality" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentRunQuality()" style="margin-top:12px">执行巡检</button>
+        </div>
+
+        <!-- 周报生成 -->
+        <div class="agent-card">
+          <div class="agent-card-header">
+            <div class="agent-card-icon green">📝</div>
+            <h3>周报自动生成</h3>
+          </div>
+          <div id="agent-weekly" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentGenWeekly()" style="margin-top:12px">生成本周周报</button>
+        </div>
+
+        <!-- 待办追踪 -->
+        <div class="agent-card">
+          <div class="agent-card-header">
+            <div class="agent-card-icon red">📌</div>
+            <h3>待办追踪与提醒</h3>
+          </div>
+          <div id="agent-todos" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentTrackTodos()" style="margin-top:12px">扫描待办</button>
+        </div>
+
+        <!-- 项目覆盖分析 -->
+        <div class="agent-card">
+          <div class="agent-card-header">
+            <div class="agent-card-icon purple">🎯</div>
+            <h3>项目覆盖分析</h3>
+          </div>
+          <div id="agent-coverage" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentCoverage()" style="margin-top:12px">分析覆盖率</button>
+        </div>
+
+        <!-- 人员工作量 -->
+        <div class="agent-card">
+          <div class="agent-card-header">
+            <div class="agent-card-icon green">👥</div>
+            <h3>人员工作量分析</h3>
+          </div>
+          <div id="agent-workload" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentWorkload()" style="margin-top:12px">分析工作量</button>
+        </div>
+
+        <!-- 风险雷达 -->
+        <div class="agent-card">
+          <div class="agent-card-header">
+            <div class="agent-card-icon red">⚠️</div>
+            <h3>风险预警雷达</h3>
+          </div>
+          <div id="agent-risk" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentRiskRadar()" style="margin-top:12px">扫描风险</button>
+        </div>
+
+        <!-- 运营建议 -->
+        <div class="agent-card agent-card-wide">
+          <div class="agent-card-header">
+            <div class="agent-card-icon accent">💡</div>
+            <h3>Agent 运营建议</h3>
+            <span class="agent-badge">AI</span>
+          </div>
+          <div id="agent-suggestions" class="agent-report"></div>
+          <button class="btn-primary btn-sm" onclick="agentSuggestions()" style="margin-top:12px">生成建议</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 详情/续录弹窗 ===== -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
