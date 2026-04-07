@@ -26,7 +26,7 @@ async function uploadImage(file) {
 const PROJECTS = ['DF','Highguard','Fate trigger','Wonderland','The Cube','CFH','粒粒小人国','HOKW','ABI','POE2','湮灭之潮','soulframe','Dune','Project Spirit','Terminal brigade','Exborne','Project T','B4B2','Exterminauts','Roco Kingdom','Project Hi Game','Zoopunk','Last Sentinel','Project Raid','Dread Merdian','不涉及具体项目'];
 const PLATFORMS = ['PlayStation','Xbox','Steam','Epic','TT','twitch','Tap','小黑盒','其他平台（标注具体平台）','内部运营信息','不涉及具体平台'];
 const TYPES = ['业务落地','平台合作进展','项目组支持','风险提示','信息输入'];
-const IMPORTANCE = ['重要','次重要','日常'];
+const IMPORTANCE = ['重要','次重要'];
 const SCOPES = ['IEG','IEG Global'];
 const PEOPLE = ['Jacob','Jim','Allen','Anna','Ailsa','Rita','Angela','Ryan','Michael'];
 const ADMIN_NAME = 'Michael';
