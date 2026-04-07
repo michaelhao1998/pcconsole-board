@@ -13,7 +13,9 @@ const HEADERS = {
 const PROJECTS = ['DF','Highguard','Fate trigger','Wonderland','The Cube','CFH','粒粒小人国','HOKW','ABI','POE2','湮灭之潮','soulframe','Dune','Project Spirit','Terminal brigade','Exborne','Project T','B4B2','Exterminauts','Roco Kingdom','Project Hi Game','Zoopunk','Last Sentinel','Project Raid','Dread Merdian','不涉及具体项目'];
 const PLATFORMS = ['PlayStation','Xbox','Steam','Epic','TT','twitch','Tap','小黑盒','其他平台（标注具体平台）','内部运营信息','不涉及具体平台'];
 const TYPES = ['业务落地','平台合作进展','项目组支持','风险提示','信息输入'];
-const PEOPLE = ['Jacob','Wenqing','Jim','Ann','Ryan','Allen','Michael'];
+const IMPORTANCE = ['重要','次重要','日常'];
+const PEOPLE = ['Jacob','Jim','Allen','Anna','Ailsa','Rita','Angela','Ryan','Michael'];
+const ADMIN_NAME = 'Michael';
 
 // ===== Supabase API 封装 =====
 async function fetchProgress() {
@@ -39,6 +41,27 @@ async function insertUpdate(record) {
   if (!res.ok) { const e = await res.json(); throw new Error(e.message || '更新失败'); }
   return await res.json();
 }
+
+async function updateProgress(id, data) {
+  const res = await fetch(`${API}/progress?id=eq.${id}`, {
+    method: 'PATCH', headers: HEADERS,
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || '修改失败'); }
+  return await res.json();
+}
+
+async function deleteProgress(id) {
+  await fetch(`${API}/progress_updates?progress_id=eq.${id}`, { method: 'DELETE', headers: HEADERS });
+  const res = await fetch(`${API}/progress?id=eq.${id}`, { method: 'DELETE', headers: HEADERS });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || '删除失败'); }
+}
+
+// ===== 管理员判断 =====
+let currentUser = localStorage.getItem('pcboard_user') || '';
+function isAdmin() { return currentUser.toLowerCase() === ADMIN_NAME.toLowerCase(); }
+function setCurrentUser(name) { currentUser = name; localStorage.setItem('pcboard_user', name); }
+function canEdit(record) { return isAdmin() || record.person === currentUser; }
 
 // ===== 全局数据缓存 =====
 let allData = [];
@@ -110,12 +133,14 @@ function renderDashboard() {
     const updateCount = updates.length;
     const latestInfo = updateCount > 0 ? updates[updateCount - 1].info : d.info;
     const latestTodo = updateCount > 0 ? (updates[updateCount - 1].todo || d.todo) : d.todo;
+    const impClass = d.importance === '重要' ? 'imp-high' : d.importance === '次重要' ? 'imp-mid' : 'imp-low';
     return `<div class="progress-card" onclick="openDetail('${d.id}')">
       <div class="type-bar ${d.type}"></div>
       <div class="card-top">
         <div>
           <div class="card-project">${esc(d.project)}</div>
           <div class="card-meta">
+            ${d.importance ? `<span class="tag tag-importance ${impClass}">${esc(d.importance)}</span>` : ''}
             <span class="tag tag-platform">${esc(d.platform)}</span>
             <span class="tag tag-type">${esc(d.type)}</span>
             <span class="tag tag-person">${esc(d.person)}</span>
@@ -173,9 +198,13 @@ function addFormEntry() {
         <select class="form-select" data-field="type"><option value="">请选择</option>${TYPES.map(t => `<option>${esc(t)}</option>`).join('')}</select>
       </div>
       <div class="form-group">
+        <label class="form-label">重要性 *</label>
+        <select class="form-select" data-field="importance"><option value="">请选择</option>${IMPORTANCE.map(i => `<option>${esc(i)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
         <label class="form-label">填写人 *</label>
         <div class="combo-input">
-          <input class="form-input" data-field="person" placeholder="选择或输入姓名" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off">
+          <input class="form-input" data-field="person" placeholder="选择或输入姓名" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off" value="${esc(currentUser)}">
           <div class="combo-dropdown">${PEOPLE.map(p => `<div class="combo-option" onclick="selectCombo(this)">${esc(p)}</div>`).join('')}</div>
         </div>
       </div>
@@ -230,16 +259,18 @@ async function submitAll() {
     const project = entry.querySelector('[data-field="project"]').value.trim();
     const platform = entry.querySelector('[data-field="platform"]').value;
     const type = entry.querySelector('[data-field="type"]').value;
+    const importance = entry.querySelector('[data-field="importance"]').value;
     const person = entry.querySelector('[data-field="person"]').value.trim();
     const info = entry.querySelector('[data-field="info"]').value.trim();
     const todo = entry.querySelector('[data-field="todo"]').value.trim();
     const remark = entry.querySelector('[data-field="remark"]').value.trim();
-    if (!project || !platform || !type || !person || !info) {
+    if (!project || !platform || !type || !importance || !person || !info) {
       entry.style.borderColor = 'var(--red)';
       showToast('❌ 请填写所有必填项（标 * 字段）', 'var(--red)');
       return;
     }
-    records.push({ project, platform, type, person, info, todo, remark });
+    setCurrentUser(person);
+    records.push({ project, platform, type, importance, person, info, todo, remark });
   }
   try {
     showLoading(true);
@@ -253,16 +284,27 @@ async function submitAll() {
   }
 }
 
-// ===== 详情弹窗 & 续录 =====
+// ===== 详情弹窗 & 续录 & 编辑 =====
 function openDetail(id) {
   const d = allData.find(r => r.id === id);
   if (!d) return;
   const updates = d.progress_updates || [];
+  const editable = canEdit(d);
+  const impClass = d.importance === '重要' ? 'imp-high' : d.importance === '次重要' ? 'imp-mid' : 'imp-low';
   const mc = document.getElementById('modal-content');
   mc.innerHTML = `
-    <h2>${esc(d.project)}</h2>
-    <p class="subtitle">创建于 ${formatDate(d.created_at)} · ${esc(d.person)}</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <h2>${esc(d.project)}</h2>
+        <p class="subtitle">创建于 ${formatDate(d.created_at)} · ${esc(d.person)}</p>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${editable ? `<button class="btn-outline btn-sm" onclick="openEditMode('${d.id}')">✏️ 修改</button>` : ''}
+        ${isAdmin() ? `<button class="btn-danger btn-sm" onclick="confirmDelete('${d.id}')">🗑️ 删除</button>` : ''}
+      </div>
+    </div>
     <div class="detail-tags" style="margin-bottom:18px">
+      ${d.importance ? `<span class="tag tag-importance ${impClass}">${esc(d.importance)}</span>` : ''}
       <span class="tag tag-platform">${esc(d.platform)}</span>
       <span class="tag tag-type">${esc(d.type)}</span>
     </div>
@@ -281,7 +323,7 @@ function openDetail(id) {
         <div class="form-group full"><label class="form-label">核心信息 *</label><textarea class="form-textarea" id="modal-info" rows="3" placeholder="请输入后续进展..."></textarea></div>
         <div class="form-group"><label class="form-label">对应待办</label><textarea class="form-textarea" id="modal-todo" rows="2" placeholder="选填"></textarea></div>
         <div class="form-group"><label class="form-label">填写人 *</label>
-          <div class="combo-input"><input class="form-input" id="modal-person" placeholder="选择或输入" value="${esc(d.person)}" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off">
+          <div class="combo-input"><input class="form-input" id="modal-person" placeholder="选择或输入" value="${esc(currentUser || d.person)}" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off">
           <div class="combo-dropdown">${PEOPLE.map(p => `<div class="combo-option" onclick="selectCombo(this)">${esc(p)}</div>`).join('')}</div></div>
         </div>
       </div>
@@ -293,11 +335,98 @@ function openDetail(id) {
   document.getElementById('modal-overlay').classList.add('show');
 }
 
+// 编辑模式
+function openEditMode(id) {
+  const d = allData.find(r => r.id === id);
+  if (!d) return;
+  const mc = document.getElementById('modal-content');
+  mc.innerHTML = `
+    <h2>✏️ 修改进展记录</h2>
+    <p class="subtitle">${esc(d.project)} · ${esc(d.person)}</p>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+      <div class="form-group">
+        <label class="form-label">项目 *</label>
+        <div class="combo-input">
+          <input class="form-input" id="edit-project" value="${esc(d.project)}" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off">
+          <div class="combo-dropdown">${PROJECTS.map(p => `<div class="combo-option" onclick="selectCombo(this)">${esc(p)}</div>`).join('')}</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">平台 *</label>
+        <select class="form-select" id="edit-platform">${PLATFORMS.map(p => `<option ${p === d.platform ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">进展类型 *</label>
+        <select class="form-select" id="edit-type">${TYPES.map(t => `<option ${t === d.type ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">重要性 *</label>
+        <select class="form-select" id="edit-importance">${IMPORTANCE.map(i => `<option ${i === d.importance ? 'selected' : ''}>${esc(i)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">核心信息 *</label>
+        <textarea class="form-textarea" id="edit-info" rows="3">${esc(d.info)}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">对应待办</label>
+        <textarea class="form-textarea" id="edit-todo" rows="2">${esc(d.todo || '')}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <textarea class="form-textarea" id="edit-remark" rows="2">${esc(d.remark || '')}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn-primary" onclick="submitEdit('${d.id}')">保存修改</button>
+      <button class="btn-outline" onclick="openDetail('${d.id}')">取消</button>
+    </div>`;
+}
+
+async function submitEdit(id) {
+  const project = document.getElementById('edit-project').value.trim();
+  const platform = document.getElementById('edit-platform').value;
+  const type = document.getElementById('edit-type').value;
+  const importance = document.getElementById('edit-importance').value;
+  const info = document.getElementById('edit-info').value.trim();
+  const todo = document.getElementById('edit-todo').value.trim();
+  const remark = document.getElementById('edit-remark').value.trim();
+  if (!project || !platform || !type || !importance || !info) {
+    showToast('❌ 请填写所有必填项', 'var(--red)'); return;
+  }
+  try {
+    showLoading(true);
+    await updateProgress(id, { project, platform, type, importance, info, todo, remark });
+    closeModal();
+    await loadAndRenderDashboard();
+    showToast('✅ 修改已保存');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'var(--red)');
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function confirmDelete(id) {
+  if (!confirm('确定要删除这条进展及其所有更新记录吗？此操作不可撤销。')) return;
+  try {
+    showLoading(true);
+    await deleteProgress(id);
+    closeModal();
+    await loadAndRenderDashboard();
+    showToast('✅ 已删除');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'var(--red)');
+  } finally {
+    showLoading(false);
+  }
+}
+
 async function submitUpdate(progressId) {
   const info = document.getElementById('modal-info').value.trim();
   const todo = document.getElementById('modal-todo').value.trim();
   const person = document.getElementById('modal-person').value.trim();
   if (!info || !person) { showToast('❌ 请填写核心信息和填写人', 'var(--red)'); return; }
+  setCurrentUser(person);
   try {
     showLoading(true);
     await insertUpdate({ progress_id: progressId, info, todo, person });
