@@ -58,10 +58,53 @@ async function deleteProgress(id) {
 }
 
 // ===== 管理员判断 =====
+const ADMIN_PASSWORD = 'pcconsole2026';
 let currentUser = localStorage.getItem('pcboard_user') || '';
-function isAdmin() { return currentUser.toLowerCase() === ADMIN_NAME.toLowerCase(); }
+let adminLoggedIn = sessionStorage.getItem('pcboard_admin') === 'true';
+
+function isAdmin() { return adminLoggedIn; }
 function setCurrentUser(name) { currentUser = name; localStorage.setItem('pcboard_user', name); }
 function canEdit(record) { return isAdmin() || record.person === currentUser; }
+
+function showAdminLogin() {
+  if (adminLoggedIn) return;
+  const pwd = prompt('请输入管理员密码：');
+  if (pwd === null) return;
+  if (pwd === ADMIN_PASSWORD) {
+    adminLoggedIn = true;
+    sessionStorage.setItem('pcboard_admin', 'true');
+    setCurrentUser('Michael');
+    updateAdminUI();
+    showToast('✅ 管理员登录成功');
+    renderDashboard();
+  } else {
+    showToast('❌ 密码错误', 'var(--red)');
+  }
+}
+
+function adminLogout() {
+  adminLoggedIn = false;
+  sessionStorage.removeItem('pcboard_admin');
+  updateAdminUI();
+  showToast('已退出管理员模式');
+  renderDashboard();
+}
+
+function updateAdminUI() {
+  const area = document.getElementById('admin-area');
+  if (adminLoggedIn) {
+    area.innerHTML = `<div class="admin-logged">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+      <span>管理员</span>
+      <button class="admin-logout" onclick="adminLogout()">退出</button>
+    </div>`;
+  } else {
+    area.innerHTML = `<button class="nav-btn" id="admin-login-btn" onclick="showAdminLogin()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      <span>管理员登录</span>
+    </button>`;
+  }
+}
 
 // ===== 全局数据缓存 =====
 let allData = [];
@@ -855,4 +898,4 @@ function renderAgentReport(containerId, issues){
 }
 
 // ===== 初始化 =====
-window.addEventListener('DOMContentLoaded', () => { loadAndRenderDashboard(); });
+window.addEventListener('DOMContentLoaded', () => { updateAdminUI(); loadAndRenderDashboard(); });
