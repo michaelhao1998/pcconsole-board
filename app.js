@@ -2,12 +2,25 @@
 const SUPABASE_URL = 'https://iczpfjjzcqwxjmbwskyr.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_tQ87RglYgFskm0jB7_pufA_-B5ksNmf';
 const API = `${SUPABASE_URL}/rest/v1`;
+const STORAGE_URL = `${SUPABASE_URL}/storage/v1/object`;
 const HEADERS = {
   'apikey': SUPABASE_KEY,
   'Authorization': `Bearer ${SUPABASE_KEY}`,
   'Content-Type': 'application/json',
   'Prefer': 'return=representation'
 };
+
+async function uploadImage(file) {
+  const ext = file.name.split('.').pop();
+  const name = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const res = await fetch(`${STORAGE_URL}/progress-images/${name}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type },
+    body: file
+  });
+  if (!res.ok) throw new Error('图片上传失败');
+  return `${STORAGE_URL}/public/progress-images/${name}`;
+}
 
 // ===== 预设选项 =====
 const PROJECTS = ['DF','Highguard','Fate trigger','Wonderland','The Cube','CFH','粒粒小人国','HOKW','ABI','POE2','湮灭之潮','soulframe','Dune','Project Spirit','Terminal brigade','Exborne','Project T','B4B2','Exterminauts','Roco Kingdom','Project Hi Game','Zoopunk','Last Sentinel','Project Raid','Dread Merdian','不涉及具体项目'];
@@ -269,6 +282,14 @@ function addFormEntry() {
         <label class="form-label">备注</label>
         <textarea class="form-textarea" data-field="remark" rows="2" placeholder="选填"></textarea>
       </div>
+      <div class="form-group full">
+        <label class="form-label">图片附件（可选，支持多张）</label>
+        <div class="img-upload-area" data-field="images">
+          <input type="file" accept="image/*" multiple class="img-file-input" onchange="handleImageSelect(this)">
+          <div class="img-upload-placeholder">📷 点击或拖拽上传图片</div>
+          <div class="img-preview-list"></div>
+        </div>
+      </div>
     </div>
   </div>`;
   document.getElementById('input-forms').insertAdjacentHTML('beforeend', html);
@@ -276,6 +297,37 @@ function addFormEntry() {
 }
 
 function removeEntry(id) { document.getElementById(id).remove(); }
+
+// 图片处理
+function handleImageSelect(input) {
+  const files = Array.from(input.files);
+  const preview = input.closest('.img-upload-area').querySelector('.img-preview-list');
+  files.forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const item = document.createElement('div');
+      item.className = 'img-preview-item';
+      item.innerHTML = `<img src="${e.target.result}"><button class="img-remove" onclick="this.parentElement.remove()">×</button>`;
+      item._file = file;
+      preview.appendChild(item);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+async function uploadEntryImages(entry) {
+  const items = entry.querySelectorAll('.img-preview-item');
+  const urls = [];
+  for (const item of items) {
+    if (item._file) {
+      const url = await uploadImage(item._file);
+      urls.push(url);
+    }
+  }
+  return urls;
+}
 
 // Combo box
 function showCombo(input) {
@@ -324,6 +376,12 @@ async function submitAll() {
   }
   try {
     showLoading(true);
+    // 上传图片
+    const entryArr = Array.from(entries);
+    for (let i = 0; i < records.length; i++) {
+      const imgUrls = await uploadEntryImages(entryArr[i]);
+      if (imgUrls.length > 0) records[i].images = imgUrls;
+    }
     await insertProgress(records);
     showToast(`✅ 成功提交 ${records.length} 条工作进展`);
     switchView('dashboard');
@@ -362,6 +420,7 @@ function openDetail(id) {
     <div class="detail-section"><h4>核心信息</h4><p>${esc(d.info).replace(/\n/g, '<br>')}</p></div>
     ${d.todo ? `<div class="detail-section"><h4>对应待办</h4><p>${esc(d.todo).replace(/\n/g, '<br>')}</p></div>` : ''}
     ${d.remark ? `<div class="detail-section"><h4>备注</h4><p>${esc(d.remark).replace(/\n/g, '<br>')}</p></div>` : ''}
+    ${d.images && d.images.length > 0 ? `<div class="detail-section"><h4>图片附件</h4><div class="detail-images">${d.images.map(url => `<img src="${esc(url)}" class="detail-img" onclick="window.open('${esc(url)}','_blank')">`).join('')}</div></div>` : ''}
     ${updates.length > 0 ? `<div class="timeline"><h3>📜 更新记录 (${updates.length})</h3>${updates.map(u => `
       <div class="timeline-item">
         <div class="timeline-date">${formatDate(u.created_at)} · ${esc(u.person)}</div>

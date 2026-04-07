@@ -172,6 +172,23 @@ body{font-family:'Noto Sans SC','DM Sans',sans-serif;background:var(--bg);color:
 .loading-spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* Image Upload */
+.img-upload-area{position:relative;border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:12px;transition:border-color .2s;min-height:60px}
+.img-upload-area:hover{border-color:var(--accent)}
+.img-file-input{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:1}
+.img-upload-placeholder{text-align:center;color:var(--text-light);font-size:13px;padding:8px 0;pointer-events:none}
+.img-preview-list{display:flex;gap:8px;flex-wrap:wrap;position:relative;z-index:2}
+.img-preview-list:not(:empty)+.img-file-input~.img-upload-placeholder{display:none}
+.img-preview-item{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.img-preview-item img{width:100%;height:100%;object-fit:cover}
+.img-remove{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;width:20px;height:20px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.img-remove:hover{background:var(--red)}
+
+/* Detail Images */
+.detail-images{display:flex;gap:8px;flex-wrap:wrap}
+.detail-img{width:120px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:transform .2s}
+.detail-img:hover{transform:scale(1.05);box-shadow:var(--shadow-lg)}
+
 /* ===== AI Agent 视图 ===== */
 .agent-modules{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .agent-card{background:var(--card);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);border:1.5px solid var(--border);transition:border-color .2s;display:flex;flex-direction:column}
