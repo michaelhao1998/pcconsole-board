@@ -14,6 +14,7 @@ const PROJECTS = ['DF','Highguard','Fate trigger','Wonderland','The Cube','CFH',
 const PLATFORMS = ['PlayStation','Xbox','Steam','Epic','TT','twitch','Tap','小黑盒','其他平台（标注具体平台）','内部运营信息','不涉及具体平台'];
 const TYPES = ['业务落地','平台合作进展','项目组支持','风险提示','信息输入'];
 const IMPORTANCE = ['重要','次重要','日常'];
+const SCOPES = ['IEG','IEG Global'];
 const PEOPLE = ['Jacob','Jim','Allen','Anna','Ailsa','Rita','Angela','Ryan','Michael'];
 const ADMIN_NAME = 'Michael';
 
@@ -184,6 +185,7 @@ function renderDashboard() {
           <div class="card-project">${esc(d.project)}</div>
           <div class="card-meta">
             ${d.importance ? `<span class="tag tag-importance ${impClass}">${esc(d.importance)}</span>` : ''}
+            ${d.scope ? `<span class="tag tag-scope">${esc(d.scope)}</span>` : ''}
             <span class="tag tag-platform">${esc(d.platform)}</span>
             <span class="tag tag-type">${esc(d.type)}</span>
             <span class="tag tag-person">${esc(d.person)}</span>
@@ -226,11 +228,15 @@ function addFormEntry() {
     </div>
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">项目 *</label>
+        <label class="form-label">项目 *<span class="form-hint">下拉选项仅供参考，支持手动输入</span></label>
         <div class="combo-input">
           <input class="form-input" data-field="project" placeholder="选择或输入项目" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off">
           <div class="combo-dropdown">${PROJECTS.map(p => `<div class="combo-option" onclick="selectCombo(this)">${esc(p)}</div>`).join('')}</div>
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">业务范围 *</label>
+        <select class="form-select" data-field="scope"><option value="">请选择</option>${SCOPES.map(s => `<option>${esc(s)}</option>`).join('')}</select>
       </div>
       <div class="form-group">
         <label class="form-label">平台 *</label>
@@ -300,6 +306,7 @@ async function submitAll() {
   const records = [];
   for (const entry of entries) {
     const project = entry.querySelector('[data-field="project"]').value.trim();
+    const scope = entry.querySelector('[data-field="scope"]').value;
     const platform = entry.querySelector('[data-field="platform"]').value;
     const type = entry.querySelector('[data-field="type"]').value;
     const importance = entry.querySelector('[data-field="importance"]').value;
@@ -307,13 +314,13 @@ async function submitAll() {
     const info = entry.querySelector('[data-field="info"]').value.trim();
     const todo = entry.querySelector('[data-field="todo"]').value.trim();
     const remark = entry.querySelector('[data-field="remark"]').value.trim();
-    if (!project || !platform || !type || !importance || !person || !info) {
+    if (!project || !scope || !platform || !type || !importance || !person || !info) {
       entry.style.borderColor = 'var(--red)';
       showToast('❌ 请填写所有必填项（标 * 字段）', 'var(--red)');
       return;
     }
     setCurrentUser(person);
-    records.push({ project, platform, type, importance, person, info, todo, remark });
+    records.push({ project, scope, platform, type, importance, person, info, todo, remark });
   }
   try {
     showLoading(true);
@@ -348,6 +355,7 @@ function openDetail(id) {
     </div>
     <div class="detail-tags" style="margin-bottom:18px">
       ${d.importance ? `<span class="tag tag-importance ${impClass}">${esc(d.importance)}</span>` : ''}
+      ${d.scope ? `<span class="tag tag-scope">${esc(d.scope)}</span>` : ''}
       <span class="tag tag-platform">${esc(d.platform)}</span>
       <span class="tag tag-type">${esc(d.type)}</span>
     </div>
@@ -395,6 +403,10 @@ function openEditMode(id) {
         </div>
       </div>
       <div class="form-group">
+        <label class="form-label">业务范围 *</label>
+        <select class="form-select" id="edit-scope">${SCOPES.map(s => `<option ${s === d.scope ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
         <label class="form-label">平台 *</label>
         <select class="form-select" id="edit-platform">${PLATFORMS.map(p => `<option ${p === d.platform ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
       </div>
@@ -427,18 +439,19 @@ function openEditMode(id) {
 
 async function submitEdit(id) {
   const project = document.getElementById('edit-project').value.trim();
+  const scope = document.getElementById('edit-scope').value;
   const platform = document.getElementById('edit-platform').value;
   const type = document.getElementById('edit-type').value;
   const importance = document.getElementById('edit-importance').value;
   const info = document.getElementById('edit-info').value.trim();
   const todo = document.getElementById('edit-todo').value.trim();
   const remark = document.getElementById('edit-remark').value.trim();
-  if (!project || !platform || !type || !importance || !info) {
+  if (!project || !scope || !platform || !type || !importance || !info) {
     showToast('❌ 请填写所有必填项', 'var(--red)'); return;
   }
   try {
     showLoading(true);
-    await updateProgress(id, { project, platform, type, importance, info, todo, remark });
+    await updateProgress(id, { project, scope, platform, type, importance, info, todo, remark });
     closeModal();
     await loadAndRenderDashboard();
     showToast('✅ 修改已保存');

@@ -89,6 +89,8 @@ body{font-family:'Noto Sans SC','DM Sans',sans-serif;background:var(--bg);color:
 .tag-platform{background:var(--blue-bg);color:var(--blue)}
 .tag-type{background:var(--purple-bg);color:var(--purple)}
 .tag-person{background:var(--green-bg);color:var(--green)}
+.tag-scope{background:#fdf4ff;color:#a855f7}
+.form-hint{display:block;font-weight:400;color:var(--text-light);font-size:10px;margin-top:1px}
 .card-date{font-size:11px;color:var(--text-light);white-space:nowrap;margin-top:2px}
 .card-body{padding:0 22px 18px}
 .card-info{font-size:13.5px;line-height:1.7;color:var(--text);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
