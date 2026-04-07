@@ -426,6 +426,7 @@ function openDetail(id) {
         <div class="timeline-date">${formatDate(u.created_at)} · ${esc(u.person)}</div>
         <div class="timeline-text">${esc(u.info).replace(/\n/g, '<br>')}</div>
         ${u.todo ? `<div style="font-size:12px;color:var(--text-sec);margin-top:4px">📌 ${esc(u.todo)}</div>` : ''}
+        ${u.images && u.images.length > 0 ? `<div class="detail-images" style="margin-top:6px">${u.images.map(url => `<img src="${esc(url)}" class="detail-img" style="width:80px;height:60px" onclick="window.open('${esc(url)}','_blank')">`).join('')}</div>` : ''}
       </div>`).join('')}</div>` : ''}
     <div class="modal-form">
       <h3>📝 续录后续进展</h3>
@@ -435,6 +436,14 @@ function openDetail(id) {
         <div class="form-group"><label class="form-label">填写人 *</label>
           <div class="combo-input"><input class="form-input" id="modal-person" placeholder="选择或输入" value="${esc(currentUser || d.person)}" onfocus="showCombo(this)" oninput="filterCombo(this)" autocomplete="off">
           <div class="combo-dropdown">${PEOPLE.map(p => `<div class="combo-option" onclick="selectCombo(this)">${esc(p)}</div>`).join('')}</div></div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">图片附件（可选）</label>
+          <div class="img-upload-area" id="modal-images">
+            <input type="file" accept="image/*" multiple class="img-file-input" onchange="handleImageSelect(this)">
+            <div class="img-upload-placeholder">📷 点击或拖拽上传图片</div>
+            <div class="img-preview-list"></div>
+          </div>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">
@@ -544,7 +553,11 @@ async function submitUpdate(progressId) {
   setCurrentUser(person);
   try {
     showLoading(true);
-    await insertUpdate({ progress_id: progressId, info, todo, person });
+    const imgArea = document.getElementById('modal-images');
+    const imgUrls = await uploadEntryImages(imgArea);
+    const record = { progress_id: progressId, info, todo, person };
+    if (imgUrls.length > 0) record.images = imgUrls;
+    await insertUpdate(record);
     closeModal();
     await loadAndRenderDashboard();
     showToast('✅ 后续进展已更新');
