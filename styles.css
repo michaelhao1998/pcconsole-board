@@ -248,3 +248,34 @@ body{font-family:'Noto Sans SC','DM Sans',sans-serif;background:var(--bg);color:
   .agent-modules{grid-template-columns:1fr}
   .agent-health-grid{grid-template-columns:repeat(3,1fr)}
 }
+
+/* 移动端适配 */
+@media (max-width:768px){
+  body{overflow:auto;height:auto}
+  #app{flex-direction:column;height:auto;min-height:100vh}
+  .sidebar{width:100%;flex-direction:row;padding:12px 16px;align-items:center;position:sticky;top:0;z-index:500}
+  .sidebar-logo{margin-bottom:0;flex-shrink:0}
+  .nav-items{flex-direction:row;gap:2px;flex:1;justify-content:center}
+  .nav-btn{padding:8px 12px;font-size:12px}
+  .nav-btn span{display:none}
+  .sidebar-bottom{margin-top:0;padding-top:0;border-top:none;border-left:1px solid var(--sidebar-hover);padding-left:8px;margin-left:8px}
+  .admin-logged span{display:none}
+  .admin-logout{font-size:10px}
+  .main-content{padding:16px;overflow-y:auto}
+  .view-header{flex-direction:column;gap:12px}
+  .view-header h1{font-size:18px}
+  .header-actions{flex-direction:column;align-items:stretch;width:100%}
+  .search-input{width:100%!important}
+  .search-input:focus{width:100%!important}
+  .filter-group{flex-wrap:wrap}
+  .filter-group select{min-width:0;flex:1}
+  .stats-bar{flex-wrap:wrap}
+  .stat-card{min-width:calc(50% - 8px);flex:none}
+  .dashboard-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr!important}
+  .form-group.half{grid-column:1}
+  .modal{width:95%;padding:20px;max-height:90vh}
+  .modal-form .form-grid{grid-template-columns:1fr!important}
+  .agent-modules{grid-template-columns:1fr}
+  .agent-health-grid{grid-template-columns:repeat(2,1fr)}
+}
